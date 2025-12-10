@@ -2,7 +2,7 @@
 
 # author: matija
 # license: MIT license
-# This script provides requrements and packages that are necessary
+# This script provides requirements and packages that are necessary
 # for running and using `Whale-cmd`
 # You will manualy need to give admin permissions to this script
 # so it can run on root level
