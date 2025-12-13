@@ -93,7 +93,6 @@ status_line() {
   status_len=$(( ${#status} + 2 ))   # [OK]
   len=$(( ${#symbol} + 1 + ${#clean} ))
 
-  # Dots: total width = len + dots + status_len ~ half terminal width
   dots=$(( (cols / 2) - len ))
   (( dots < 2 )) && dots=2
 
@@ -103,7 +102,6 @@ status_line() {
     dots_str+="."
   done
 
-  # Padding to center the line
   padding=$(( (cols - (len + ${#dots_str} + status_len)) / 2 ))
   (( padding < 0 )) && padding=0
 
@@ -113,11 +111,9 @@ status_line() {
     "$dots_str" \
     "$color" "$status" "$RESETBG"
 
-  # Random sleep
   sleep_time=$(awk -v min=0.2 -v max=0.7 'BEGIN{srand(); print min+rand()*(max-min)}')
   sleep "$sleep_time"
 
-  # Log without colors
   echo "$message [$status]" | sed 's/\x1b\[[0-9;]*m//g' >> "$LOG_FILE"
 }
 
