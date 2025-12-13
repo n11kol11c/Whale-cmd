@@ -19,7 +19,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 log() {
-  echo -e "$(date '+%Y-%m-%d %H:%M:%S') | $*" | tee -a "$LOG_FILE"
+  echo -e "$(date '+%Y-%m-%d %H:%M:%S') | $*" | tee -a "$BINDIR/$LOG_FILE"
 }
 
 info()    { log "${BLUE}[INFO]${NC} $*"; }
