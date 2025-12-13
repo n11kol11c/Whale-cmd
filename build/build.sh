@@ -1,69 +1,103 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
-# author: matija
-# license: MIT license
-# This script provides requrements and packages that are necessary
-# for running and using `Whale-cmd`
-# You will manualy need to give admin permissions to this script
-# so it can run on root level
-# If you are having trouble downloading packages that have constant updates
-# you can reach me out on my linkedin, discord
-# links will be on my github page at github.com/n11kol11c
-# This script provides cross-compilers requried for C that is core lang
-# for running this little cmd-cover
 
-# chmod auto-set
-# auto-give root permissions
-# dont touch this unless you know what are you doing :)
-chmod +x $0
+set -Eeuo pipefail
 
-# script dependencies
-# these are script dependencies that will be our little macro
-# so we dont repeat paths using slashes
-BIN="BIN"
-ERROR_FILE="error.log"
-ERROR_LOG="$BIN/error.log"
+BINDIR="bin"
+BOOT_FILE="$BINDIR/boot"
+LOGS_FILE="$BINDIR/logs"
+REPORTS_FILE="$BINDIR/reports"
 
-# list of build packages
-# created pending packages for those that are missing on system
-packages=("gcc", "make", "")
-pending=()
+PACKAGES=(git make nmap gcc)
+DRY_RUN=false
+LOG_FILE="setup.log"
 
-check_dirs() {
-    local bin_dir="$BIN"
-    local error_file="$BIN/$ERROR_FILE"
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-    if [[ ! -d "$bin_dir" ]]; then
-        mkdir -p "$bin_dir"
-    fi
-
-    if [[ ! -f "$ERROR_FILE" ]]; then
-        touch "$error_file"
-    fi
+log() {
+  echo -e "$(date '+%Y-%m-%d %H:%M:%S') | $*" | tee -a "$LOG_FILE"
 }
 
-# function that will check for that boring package downloading
-check_packages() {
-    local pkg
-    local apt_cmd=(sudo apt-get install -y) # Macro for apt install
+info()    { log "${BLUE}[INFO]${NC} $*"; }
+success() { log "${GREEN}[OK]${NC}   $*"; }
+warn()    { log "${YELLOW}[WARN]${NC} $*"; }
+error()   { log "${RED}[ERR]${NC}  $*"; }
 
-    # loop through packages to check if there is missing-package
-    for pkg in "${packages[@]}"; do
-        if ! command -v "$pkg" >/dev/null 2>&1; then
-            # every package that has not been found 
-            # will be dumped to bin directory
-            echo "No package found: $pkg" >> "$BIN/$ERROR_FILE"
-            pending+=("$pkg") # add package to pending
-        fi
-    done
+run() {
+  if $DRY_RUN; then
+    info "[dry-run] $*"
+  else
+    eval "$@"
+  fi
+}
 
-    # check if there is pending packages
-    # if pending number is gt 0 it means some packages are
-    # missing from the system
-    if (( ${#pending[@]} > 0 )); then
-        echo "Installing missing packages: ${pending[*]}"
-        "${apt_cmd[@]}" "${pending[@]}"
+trap 'error "Script failed at line $LINENO"' ERR
+
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+    --help)
+      echo "Usage: $0 [--dry-run]"
+      exit 0
+      ;;
+  esac
+done
+
+detect_pm() {
+  if command -v apt-get &>/dev/null; then
+    PM="apt"
+    INSTALL_CMD="sudo apt-get install -y"
+    UPDATE_CMD="sudo apt-get update"
+  elif command -v dnf &>/dev/null; then
+    PM="dnf"
+    INSTALL_CMD="sudo dnf install -y"
+    UPDATE_CMD="sudo dnf makecache"
+  elif command -v pacman &>/dev/null; then
+    PM="pacman"
+    INSTALL_CMD="sudo pacman -S --noconfirm"
+    UPDATE_CMD="sudo pacman -Sy"
+  else
+    error "No supported package manager found"
+    exit 1
+  fi
+
+  success "Detected package manager: $PM"
+}
+
+main() {
+  mkdir -p "$BINDIR" "$LOGS_FILE" "$REPORTS_FILE"
+
+  info "Starting system preparation"
+  detect_pm
+
+  local pending=()
+
+  for pkg in "${PACKAGES[@]}"; do
+    if command -v "$pkg" &>/dev/null; then
+      success "Package '$pkg' already installed"
     else
-        echo "All required packages are already installed."
+      warn "Package '$pkg' missing"
+      pending+=("$pkg")
     fi
+  done
+
+  if (( ${#pending[@]} == 0 )); then
+    success "All packages already installed"
+  else
+    info "Updating package index"
+    run "$UPDATE_CMD"
+
+    info "Installing missing packages: ${pending[*]}"
+    for p in "${pending[@]}"; do
+      run "$INSTALL_CMD $p"
+    done
+  fi
+
+  success "System is fully prepared"
 }
+
+main "$@"
