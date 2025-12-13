@@ -23,7 +23,7 @@ SYMBOL_OK="[${GREEN}+${RESETBG}]"
 SYMBOL_WARN="[${YELLOW}!${RESETBG}]"
 SYMBOL_ERR="[${RED}x${RESETBG}]"
 
-echo -ne "${RED}"
+echo -ne "${BLUE}"
 download_banner_lay
 echo -ne "${RESETBG}"
 sleep 2
@@ -38,41 +38,89 @@ log() {
     >> "$LOG_FILE"
 }
 
+# status_line() {
+#   local symbol="$1"
+#   local message="$2"
+#   local status="$3"
+#   local color="$4"
+# 
+#   local line cols clean len status_len dots total_len padding
+# 
+#   cols=$(tput cols)
+# 
+#   clean=$(sed 's/\x1b\[[0-9;]*m//g' <<< "$message")
+# 
+#   status_len=$(( ${#status} + 2 ))
+#   len=$(( ${#symbol} + 1 + ${#clean} ))
+# 
+#   dots=$(( status_len + 3 ))
+#   total_len=$(( len + dots + status_len ))
+# 
+#   dots=$(( cols / 2 - len ))
+#   (( dots < 2 )) && dots=2
+# 
+#   local dots_str=""
+#   for ((i=0;i<dots;i++)); do
+#     dots_str+="."
+#   done
+# 
+#   padding=$(( (cols - (len + dots + status_len)) / 2 ))
+#   (( padding < 0 )) && padding=0
+# 
+#   printf "%*s%b %s %*s %b[%s]%b\n" \
+#     "$padding" "" \
+#     "$symbol" "$message" \
+#     "$dots" "" \
+#     "$color" "$status" "$RESETBG"
+# 
+#   sleep_time=$(awk -v min=0.2 -v max=0.7 'BEGIN{srand(); print min+rand()*(max-min)}')
+#   sleep "$sleep_time"
+# 
+#   echo "$message [$status]" | sed 's/\x1b\[[0-9;]*m//g' >> "$LOG_FILE"
+# }
+
 status_line() {
   local symbol="$1"
   local message="$2"
   local status="$3"
   local color="$4"
 
-  local line cols clean len status_len dots total_len padding
+  local cols clean len status_len dots padding dots_str
 
   cols=$(tput cols)
-
   clean=$(sed 's/\x1b\[[0-9;]*m//g' <<< "$message")
 
-  status_len=$(( ${#status} + 2 ))
+  status_len=$(( ${#status} + 2 ))   # [OK]
   len=$(( ${#symbol} + 1 + ${#clean} ))
 
-  dots=$(( status_len + 3 ))
-  total_len=$(( len + dots + status_len ))
-
-  dots=$(( cols / 2 - len ))
+  # Dots: total width = len + dots + status_len ~ half terminal width
+  dots=$(( (cols / 2) - len ))
   (( dots < 2 )) && dots=2
 
-  padding=$(( (cols - (len + dots + status_len)) / 2 ))
+  # Build dots string
+  dots_str=""
+  for ((i=0;i<dots;i++)); do
+    dots_str+="."
+  done
+
+  # Padding to center the line
+  padding=$(( (cols - (len + ${#dots_str} + status_len)) / 2 ))
   (( padding < 0 )) && padding=0
 
-  printf "%*s%b %s %*s %b[%s]%b\n" \
+  printf "%*s%b %s %s %b[%s]%b\n" \
     "$padding" "" \
     "$symbol" "$message" \
-    "$dots" "" \
+    "$dots_str" \
     "$color" "$status" "$RESETBG"
 
+  # Random sleep
   sleep_time=$(awk -v min=0.2 -v max=0.7 'BEGIN{srand(); print min+rand()*(max-min)}')
   sleep "$sleep_time"
 
+  # Log without colors
   echo "$message [$status]" | sed 's/\x1b\[[0-9;]*m//g' >> "$LOG_FILE"
 }
+
 ok()    { status_line "$SYMBOL_OK"   "$1" "OK"    "$GREEN"; }
 warnf() { status_line "$SYMBOL_WARN" "$1" "WARN"  "$YELLOW"; }
 errf()  { status_line "$SYMBOL_ERR"  "$1" "ERROR" "$RED"; }
