@@ -15,13 +15,13 @@ LOGS_FILE="$BINDIR/logs"
 REPORTS_FILE="$BINDIR/reports"
 LOG_FILE="$BINDIR/setup.log"
 
-PACKAGES=(git make nmap gcc)
+PACKAGES=(git make nmap gcc kurcina)
 DRY_RUN=false
 
 
-SYMBOL_OK="[${GREEN}+${RESETBG}]"
-SYMBOL_WARN="[${YELLOW}!${RESETBG}]"
-SYMBOL_ERR="[${RED}x${RESETBG}]"
+SYMBOL_OK="${GREEN}[+]${RESETBG}"
+SYMBOL_WARN="${YELLOW}[!]${RESETBG}"
+SYMBOL_ERR="${RED}[x]${RESETBG}"
 
 echo -ne "${BLUE}"
 download_banner_lay
@@ -198,6 +198,8 @@ main() {
   done
 
   ok "System preparation complete"
+
+  # run "$INSTALL_CMD $pkg" >> "$LOG_FILE" 2>&1 &
 }
 
 main "$@"
