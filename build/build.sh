@@ -8,7 +8,7 @@ LOGS_FILE="$BINDIR/logs"
 REPORTS_FILE="$BINDIR/reports"
 LOG_FILE="$BINDIR/setup.log"
 
-PACKAGES=(git make nmap gcc kurcina)
+PACKAGES=(git make nmap gcc)
 DRY_RUN=false
 
 source "$SCRIPT_DIR/../assets/color.sh"
@@ -21,9 +21,9 @@ download_banner_lay
 echo -ne "${RESETBG}"
 sleep 2
 
-SYMBOL_OK="[${GREEN}+${RESETBG}]"
-SYMBOL_WARN="[${YELLOW}!${RESETBG}]"
-SYMBOL_ERR="[${RED}x${RESETBG}]"
+SYMBOL_OK="${GREEN}[+]${RESETBG}"
+SYMBOL_WARN="${YELLOW}[!]${RESETBG}"
+SYMBOL_ERR="${RED}[x]${RESETBG}"
 
 strip_ansi() { sed 's/\x1b\[[0-9;]*m//g'; }
 
@@ -115,7 +115,7 @@ main() {
 
     for pkg in "${PACKAGES[@]}"; do
         if command -v "$pkg" &>/dev/null; then
-            ok "Package '$pkg' already installed"
+            ok "Package '${BLUE}$pkg${RESETBG}' already installed"
         else
             if apt-cache show "$pkg" &>/dev/null; then
                 warnf "Installing $pkg..."
@@ -123,7 +123,7 @@ main() {
                 pids+=($!)
                 pending_pkgs+=("$pkg")
             else
-                errf "Package '$pkg' not found in repository"
+                errf "Package '${RED}$pkg${RESETBG}' not found in repository"
             fi
         fi
     done
